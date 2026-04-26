@@ -1,16 +1,20 @@
 (function main(){
   const canvas = document.getElementById('confetti-canvas');
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { alpha: true, willReadFrequently: false });
 
   function resize(){canvas.width=innerWidth;canvas.height=innerHeight}
   addEventListener('resize',resize);resize();
 
   const confetti = [];
   const colors = ['#ff6b6b','#ffd166','#06d6a0','#4d96ff','#c084fc'];
+  
+  // Detect low-end devices (small RAM, slow device)
+  const isLowEnd = (navigator.deviceMemory && navigator.deviceMemory <= 4) || innerWidth <= 380;
+  
   // gentle neon particle background (mobile-optimized)
   const particles = [];
   function spawnParticles(amount = 18){
-    const count = Math.max(6, Math.floor(amount));
+    const count = Math.max(isLowEnd ? 3 : 6, Math.floor(amount * (isLowEnd ? 0.3 : 1)));
     for(let i=0;i<count;i++){
       particles.push({
         x: Math.random()*canvas.width,
@@ -39,7 +43,21 @@
   }
 
   let running=true;
+  let lastFrameTime = performance.now();
+  const targetFPS = isLowEnd ? 30 : 60;
+  const frameInterval = 1000 / targetFPS;
+  
   function tick(){
+    const now = performance.now();
+    const deltaTime = now - lastFrameTime;
+    
+    // Skip frame if not enough time has passed (throttling for low-end devices)
+    if (deltaTime < frameInterval - 2) {
+      if(running) requestAnimationFrame(tick);
+      return;
+    }
+    lastFrameTime = now - (deltaTime % frameInterval);
+    
     ctx.clearRect(0,0,canvas.width,canvas.height);
     // draw soft neon particles behind confetti
     ctx.save();
@@ -77,10 +95,23 @@
     }
     if(running) requestAnimationFrame(tick);
   }
+  
+  // Pause animation when page is hidden
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      running = false;
+    } else {
+      running = true;
+      lastFrameTime = performance.now();
+      tick();
+    }
+  });
+  
   tick();
 
   // initialize particles (fewer on small screens)
-  spawnParticles((innerWidth <= 520) ? 10 : 22);
+  const initialParticles = (innerWidth <= 520) ? (isLowEnd ? 5 : 10) : (isLowEnd ? 12 : 22);
+  spawnParticles(initialParticles);
 
   function startCelebration(){
     spawnConfetti(140);
@@ -112,8 +143,9 @@
   window.spawnSmallConfetti = (n=36) => spawnConfetti(n);
   const avatarImg = document.getElementById('avatar-img');
   avatarImg?.addEventListener('click', ()=>{
-    // mobile-friendly confetti amount
-    const smallCount = (innerWidth <= 520) ? 28 : 48;
+    // mobile-friendly confetti amount - reduced on low-end devices
+    const baseCount = (innerWidth <= 520) ? 28 : 48;
+    const smallCount = isLowEnd ? Math.floor(baseCount * 0.4) : baseCount;
     window.spawnSmallConfetti(smallCount);
     try{
       const actx = new (window.AudioContext||window.webkitAudioContext)();
@@ -255,17 +287,17 @@
     const nameEl = document.querySelector('.name');
     const cardEl = document.querySelector('.card');
     if(nameEl){
-      // add shimmer class briefly for motion-friendly devices
-      if(window.matchMedia('(prefers-reduced-motion: reduce)').matches === false){
+      // add shimmer class briefly for motion-friendly devices (skip on low-end)
+      if(!isLowEnd && window.matchMedia('(prefers-reduced-motion: reduce)').matches === false){
         nameEl.classList.add('shimmer');
         nameEl.addEventListener('animationend', ()=> nameEl.classList.remove('shimmer'), {once:true});
       }
     }
 
     if(cardEl){
-      // tap anywhere on the card to create a subtle pulse (mobile-friendly)
+      // tap anywhere on the card to create a subtle pulse (disabled on low-end devices)
       cardEl.addEventListener('click', ()=>{
-        if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        if(isLowEnd || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         cardEl.classList.remove('tap-pulse');
         // force reflow to restart animation
         // eslint-disable-next-line no-unused-expressions
