@@ -1,4 +1,73 @@
 (function main(){
+  // Screenshot & Screen Capture Protection
+  (function screenProtection(){
+    // Disable right-click context menu
+    document.addEventListener('contextmenu', (e) => e.preventDefault(), false);
+    
+    // Disable Print Screen, Alt+Print Screen, and other screenshot keys
+    document.addEventListener('keydown', (e) => {
+      // Print Screen (44), Ctrl+Print Screen, Alt+Print Screen
+      if (e.key === 'PrintScreen' || e.keyCode === 44) {
+        e.preventDefault();
+        showScreenshotWarning();
+        return false;
+      }
+      // Ctrl+Shift+S (Chrome screenshot tool)
+      if (e.ctrlKey && e.shiftKey && e.keyCode === 83) {
+        e.preventDefault();
+        showScreenshotWarning();
+        return false;
+      }
+      // Fn+F13 (Mac screenshot)
+      if (e.keyCode === 122) {
+        e.preventDefault();
+        showScreenshotWarning();
+        return false;
+      }
+    }, false);
+    
+    // Detect clipboard copy attempts
+    document.addEventListener('copy', (e) => {
+      e.preventDefault();
+      showScreenshotWarning();
+    });
+    
+    // Detect when visibility changes (screen recording or screenshot detection)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        showScreenshotWarning();
+      }
+    });
+    
+    // Disable developer tools
+    document.addEventListener('keydown', (e) => {
+      // F12, Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+Shift+J
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 67 || e.keyCode === 74))) {
+        e.preventDefault();
+        return false;
+      }
+    });
+    
+    // Detect mouse right-click copy selection
+    document.addEventListener('selectstart', (e) => {
+      e.preventDefault();
+      return false;
+    });
+    
+    function showScreenshotWarning() {
+      const body = document.body;
+      body.classList.add('screenshot-attempt');
+      setTimeout(() => {
+        body.classList.remove('screenshot-attempt');
+      }, 500);
+    }
+    
+    // Additional protection: disable drag and drop
+    document.addEventListener('dragstart', (e) => e.preventDefault());
+    document.addEventListener('drop', (e) => e.preventDefault());
+  })();
+
+
   const canvas = document.getElementById('confetti-canvas');
   const ctx = canvas.getContext('2d', { alpha: true, willReadFrequently: false });
 
