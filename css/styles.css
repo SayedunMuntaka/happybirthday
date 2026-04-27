@@ -9,14 +9,31 @@
   --glass:rgba(255,255,255,0.03);
 }
 
-*{box-sizing:border-box}
-html,body{height:100%}
+*{box-sizing:border-box;user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none}
+html,body{height:100%;-webkit-touch-callout:none}
 body{
   margin:0;
   font-family:Poppins,system-ui,Segoe UI,Roboto,Arial;
   background:linear-gradient(180deg,var(--bg),var(--bg-edge));
   color:var(--text);
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  -webkit-user-select:none;-moz-user-select:none;user-select:none;
+}
+
+/* Screenshot protection overlay */
+body::before{
+  content:'Screenshot protection enabled';
+  position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;opacity:0;font-size:14px;color:rgba(255,0,0,0.3);display:flex;align-items:center;justify-content:center;font-weight:bold;
+}
+
+body.screenshot-attempt::before{
+  animation:screenshot-warn 0.5s ease-in-out;
+}
+
+@keyframes screenshot-warn{
+  0%{opacity:0}
+  50%{opacity:1}
+  100%{opacity:0}
 }
 
 #confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:100}
